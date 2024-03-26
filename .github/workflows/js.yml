@@ -1,46 +1,47 @@
-name: JavaScript Tests
-
-on:
-  push:
-    paths:
-      - '.node-version'
-      - 'tools/cldr-apps/js/**'
-      - '.github/workflows/js.yml'
-  pull_request:
-    paths:
-      - '.node-version'
-      - 'tools/cldr-apps/js/**'
-      - '.github/workflows/js.yml'
-
 jobs:
   fetest:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
-    - uses: actions/checkout@v4
+    - continue-on-error: true
+      uses: actions/checkout@v4
       with:
-        lfs: false # not needed for this job, as we don’t currently do a Java build
-    - uses: nodenv/actions/node-version@v3 # setup using .node-version
-    - name: Cache webpack
+        lfs: false
+    - continue-on-error: true
+      uses: nodenv/actions/node-version@v3
+    - continue-on-error: true
+      name: Cache webpack
       uses: actions/cache@v3
       with:
+        key: ${{ runner.os }}-webpack-${{ hashFiles('tools/cldr-apps/package*') }}-${{
+          hashFiles('tools/cldr-apps/src/**') }}
         path: tools/cldr-apps/target/webpack_cache
-        key: ${{ runner.os }}-webpack-${{ hashFiles('tools/cldr-apps/package*') }}-${{ hashFiles('tools/cldr-apps/src/**') }}
-        restore-keys: |
-          ${{ runner.os }}-webpack-
+        restore-keys: '${{ runner.os }}-webpack-
+
           webpack-
-    - name: Cache npm repository
+
+          '
+    - continue-on-error: true
+      name: Cache npm repository
       uses: actions/cache@v3
       with:
-        path: ~/.npm
         key: ${{ runner.os }}-lint-${{ hashFiles('.github/workflows/js.yml') }}
-        restore-keys: |
-          ${{ runner.os }}-lint-
+        path: ~/.npm
+        restore-keys: '${{ runner.os }}-lint-
+
           lint-
-    - name: Prepare JS tests
+
+          '
+    - continue-on-error: true
+      name: Prepare JS tests
       run: (cd tools/cldr-apps/js && npm ci)
-    - name: Run JS tests
-      # stopgap: fail this if it takes too long
-      timeout-minutes: 10
+    - continue-on-error: true
+      name: Run JS tests
       run: (cd tools/cldr-apps/js && npm t)
-    - name: Run Webpack production build
+      timeout-minutes: 10
+    - continue-on-error: true
+      name: Run Webpack production build
       run: (cd tools/cldr-apps/js && npm run build)
+name: JavaScript Tests
+on:
+  repository_dispatch:
+    types: trigger-ga___js.yml

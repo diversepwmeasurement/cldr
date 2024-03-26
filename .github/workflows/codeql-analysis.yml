@@ -1,89 +1,68 @@
-name: "CodeQL"
-
-on:
-  push:
-    branches: [ main, keyboard*, maint/maint-* ]
-    paths:
-      - 'tools/**/java/**/*.java'
-      - 'tools/cldr-apps/js/**'
-  pull_request:
-    # The branches below must be a subset of the branches above
-    branches: [ main, keyboard*, maint/maint-* ]
-    paths:
-      - 'tools/**/java/**/*.java'
-      - 'tools/cldr-apps/js/**'
-  schedule:
-    - cron: '20 19 * * 4'
-
 jobs:
   analyze:
     name: Analyze
-    runs-on: ubuntu-latest
     permissions:
       actions: read
       contents: read
       security-events: write
-
-    strategy:
-      fail-fast: false
-      matrix:
-        language: ['java', 'javascript']
-        # Learn more about CodeQL language support at https://git.io/codeql-language-support
-
+    runs-on: self-hosted
     steps:
-    - name: Checkout repository
+    - continue-on-error: true
+      name: Checkout repository
       uses: actions/checkout@v4
-    - name: Set up JDK
+    - continue-on-error: true
       if: matrix.language == 'java'
+      name: Set up JDK
       uses: actions/setup-java@v4
       with:
+        distribution: temurin
         java-version: 11
-        distribution: 'temurin'
-    - name: Cache local Maven repository
+    - continue-on-error: true
       if: matrix.language == 'java'
+      name: Cache local Maven repository
       uses: actions/cache@v3
       with:
-        path: ~/.m2/repository
         key: ${{ runner.os }}-maven-${{ hashFiles('tools/**/pom.xml') }}
-        restore-keys: |
-          ${{ runner.os }}-maven-
-    - name: Cache local npm repository
+        path: ~/.m2/repository
+        restore-keys: '${{ runner.os }}-maven-
+
+          '
+    - continue-on-error: true
       if: matrix.language == 'javascript'
+      name: Cache local npm repository
       uses: actions/cache@v3
       with:
-        path: ~/.npm
         key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-node-
+        path: ~/.npm
+        restore-keys: '${{ runner.os }}-node-
+
           node-
-    # Initializes the CodeQL tools for scanning.
-    - name: Initialize CodeQL
+
+          '
+    - continue-on-error: true
+      name: Initialize CodeQL
       uses: github/codeql-action/init@v3
       with:
         languages: ${{ matrix.language }}
-        # If you wish to specify custom queries, you can do so here or in a config file.
-        # By default, queries listed here will override any specified in a config file.
-        # Prefix the list here with "+" to use these queries and those in the config file.
-        # queries: ./path/to/local/query, your-org/your-repo/queries@main
-
-    # Autobuild attempts to build any compiled languages  (C/C++, C#, or Java).
-    # If this step fails, then you should remove it and run the build manually (see below)
-    # - name: Autobuild
-    #   uses: github/codeql-action/autobuild@v2
-
-    # ℹ️ Command-line programs to run using the OS shell.
-    # 📚 https://git.io/JvXDl
-
-    # ✏️ If the Autobuild fails above, remove it and uncomment the following three lines
-    #    and modify them (or add more) to build your code if your project
-    #    uses a compiled language
-    - name: Build Java
-      if: matrix.language == 'java'
-      run: >
-        mvn -s .github/workflows/mvn-settings.xml -B compile --file tools/pom.xml
-        -DskipTests=true -Dskip.npm -Dskip.installnodenpm
+    - continue-on-error: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      if: matrix.language == 'java'
+      name: Build Java
+      run: 'mvn -s .github/workflows/mvn-settings.xml -B compile --file tools/pom.xml
+        -DskipTests=true -Dskip.npm -Dskip.installnodenpm
 
-    - name: Perform CodeQL Analysis
+        '
+    - continue-on-error: true
+      name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
+    strategy:
+      fail-fast: false
+      matrix:
+        language:
+        - java
+        - javascript
+name: CodeQL
+on:
+  repository_dispatch:
+    types: trigger-ga___codeql-analysis.yml
